@@ -3,7 +3,7 @@
       "aws_access_key": "{{env `AWS_ACCESS_KEY_ID`}}",
       "aws_secret_key": "{{env `AWS_SECRET_ACCESS_KEY`}}",
       "region": "eu-west-1",
-      "vm_name": "k8-rebuild",
+      "vm_name": "k8-rebuild-folder-to-folder",
       "security_group_ids": "sg-0120400d5eefb0b9e",
       "github_sha": null
     },
