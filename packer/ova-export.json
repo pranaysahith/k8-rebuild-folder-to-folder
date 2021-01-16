@@ -1,0 +1,6 @@
+{
+    "ContainerFormat": "ova",
+    "DiskImageFormat": "VMDK",
+    "S3Bucket": "glasswall-sow-ova",
+    "S3Prefix": "vms/SOW-REST/k8-rebuild-"
+}

@@ -1,0 +1,10 @@
+[
+  {
+    "Description": "filedrop OVA",
+    "Format": "ova",
+    "UserBucket": {
+      "S3Bucket": "glasswall-sow-ova",
+      "S3Key": "vms/SOW-REST/k8-rebuild-export-i-08e0457b0a29335ed.ova"
+    }
+  }
+]
