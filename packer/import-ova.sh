@@ -1,4 +1,5 @@
-# Uncomment to import OVA to AWS
+#!/bin/bash
+
 OVA_NAME=${OVA_NAME:-$1}
 cat > packer/containers.json <<EOF
 [
@@ -18,12 +19,12 @@ until [ "$RESPONSE" = "completed" ]
 do
   RESPONSE=$(aws ec2 describe-import-image-tasks --import-task-ids $IMPORT_ID | jq -r '.ImportImageTasks[0].Status')
   StatusMessage=$(aws ec2 describe-import-image-tasks --import-task-ids $IMPORT_ID | jq -r '.ImportImageTasks[0].StatusMessage')
-  if [ "$RESPONSE" == "deleted" ]; then
+  if [[ "deleted" == "$RESPONSE" ]]; then
     echo "Failed to import OVA"
     echo "OVA Import status is $RESPONSE"
     echo "Status message is $StatusMessage"
     exit -1
-  elif [ "$RESPONSE" == "active" ]; then
+  elif [[ "active" == "$RESPONSE" ]]; then
     echo "OVA Import status is $RESPONSE"
     echo "Status message is $StatusMessage"
     sleep 30
