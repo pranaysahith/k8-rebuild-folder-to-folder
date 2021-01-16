@@ -45,7 +45,9 @@ jobs:
     - name: Build AMI/OVA
       run: |
         chmod +x packer/ova-check.sh
-        packer build -color=false -on-error=cleanup -var github_sha=${{ github.sha }} -var vm_name=k8-rebuild -var region=${{ env.AWS_DEFAULT_REGION }} -var aws_access_key=${{ secrets.AWS_ACCESS_KEY }} -var aws_secret_key=${{ secrets.AWS_SECRET_ACCESS_KEY }} packer/aws-ova.json
+        packer build -color=false -on-error=cleanup -var github_sha=${{ github.sha }} -var vm_name=k8-rebuild-folder-to-folder -var region=${{ env.AWS_DEFAULT_REGION }} -var aws_access_key=${{ secrets.AWS_ACCESS_KEY }} -var aws_secret_key=${{ secrets.AWS_SECRET_ACCESS_KEY }} packer/aws-ova.json
+        chmod +x ./packer/import-ova.sh
+        ./packer/import-ova.sh k8-rebuild-folder-to-folder-{{user `github_sha`}}.ova
 
   deploy-ami:
     runs-on: ubuntu-latest
@@ -59,7 +61,7 @@ jobs:
           AWS_DEFAULT_REGION: ${{ env.AWS_DEFAULT_REGION }}
         run: |
           # instance_id="${{ steps.deploy.outputs.instance_id }}"
-          instance_id=$(aws ec2 describe-instances --filters 'Name=tag:Name,Values=dev-k8-rebuild' "Name=instance-state-name,Values=running" --output text --query 'Reservations[*].Instances[*].InstanceId')
+          instance_id=$(aws ec2 describe-instances --filters 'Name=tag:Name,Values=dev-k8-rebuild-folder-to-folder' "Name=instance-state-name,Values=running" --output text --query 'Reservations[*].Instances[*].InstanceId')
           echo ::set-output name=instance_id::$instance_id
           
       - name: Deploy AMI to dev
@@ -69,8 +71,8 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION: ${{ env.AWS_DEFAULT_REGION }}
         run: |
-          ami_id=$(aws ec2 describe-images --filters "Name=name,Values=k8-rebuild-${{ github.sha }}" --query 'Images[*].[ImageId]' --output text)
-          result=$(aws ec2 run-instances --image-id $ami_id --count 1 --instance-type t2.large --key-name k8-rebuild --security-group-ids sg-0120400d5eefb0b9e --tag-specifications 'ResourceType=instance, Tags=[{Key=Name,Value=dev-k8-rebuild}, {Key=Team, Value=k8-proxy/k8-rebuild}, {Key=Owner, Value=githubactionAMIpacker}, {Key=AMI_Name, Value=k8-rebuild-${{ github.sha }}}]')
+          ami_id=$(aws ec2 describe-images --filters "Name=name,Values=k8-rebuild-folder-to-folder-${{ github.sha }}" --query 'Images[*].[ImageId]' --output text)
+          result=$(aws ec2 run-instances --image-id $ami_id --count 1 --instance-type t2.large --key-name packer --security-group-ids sg-0120400d5eefb0b9e --tag-specifications 'ResourceType=instance, Tags=[{Key=Name,Value=dev-k8-rebuild-folder-to-folder}, {Key=Team, Value=k8-proxy/k8-rebuild-folder-to-folder}, {Key=Owner, Value=githubactionAMIpacker}, {Key=AMI_Name, Value=k8-rebuild-folder-to-folder-${{ github.sha }}}]')
           sleep 10m
           instance_id=$(echo $result | jq -r ".Instances[0].InstanceId")
           echo "$instance_id is created."
@@ -87,41 +89,3 @@ jobs:
           echo ::set-output name=instance_ip::$instance_ip
           echo ::set-output name=instance_id::$instance_id
           echo ::set-output name=ami_id::$ami_id
-      - name: Checkout submodules
-        uses: actions/checkout@v2
-        with:
-          repository: k8-proxy/vmware-scripts
-          path: vmware-scripts
-
-      - name: Run tests on the VM
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_DEFAULT_REGION: ${{ env.AWS_DEFAULT_REGION }}
-        run: |
-          instance_id="${{ steps.deploy.outputs.instance_id }}"
-          instance_ip="${{ steps.deploy.outputs.instance_ip }}"
-          ami_id="${{ steps.deploy.outputs.ami_id }}"
-          cd vmware-scripts/HealthFunctionalTests/filedrop
-          npm install
-          sed -i -r "s/([0-9]{1,3}\.){3}[0-9]{1,3}/$instance_ip/g" cypress/integration/filedrop.spec.js
-          npm test
-          echo "Tests are successfully on the new instance, terminating old instance."
-          aws ec2 create-tags --resources $ami_id --tags Key=Test_Result,Value=Success
-          instance_id="${{ steps.get_id.outputs.instance_id }}"
-          if [[ ! -z "$instance_id" ]]; then
-            echo "$instance_id" | while IFS= read -r line ; do aws ec2 terminate-instances --instance-ids $line || true; done
-          fi
-
-      - name: Delete instance if tests fail
-        if: ${{ failure() }}
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_DEFAULT_REGION: ${{ env.AWS_DEFAULT_REGION }}
-        run: |
-          echo "Failed integration tests, terminating the newly deployed VM"
-          instance_id="${{ steps.deploy.outputs.instance_id }}"
-          ami_id="${{ steps.deploy.outputs.ami_id }}"
-          aws ec2 terminate-instances --instance-ids $instance_id
-          aws ec2 create-tags --resources $ami_id --tags Key=Test_Result,Value=Failed

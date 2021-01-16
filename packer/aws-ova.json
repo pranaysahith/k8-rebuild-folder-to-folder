@@ -73,7 +73,7 @@
         {
             "type": "shell-local",
             "script": "packer/ova-check.sh",
-            "environment_vars": "OVA_NAME=k8-rebuild-{{user `github_sha`}}.ova"
+            "environment_vars": "OVA_NAME=k8-rebuild-folder-to-folder-{{user `github_sha`}}.ova"
         }
       ]
   }
