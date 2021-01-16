@@ -2,7 +2,7 @@
 DEBIAN_FRONTEND=noninteractive
 # Apt clean up
 sudo rm -f /var/lib/apt/lists/* 2>/dev/null || true
-sudo apt clean all
+sudo apt clean all || true
 sudo rm -f /home/*/.ssh/*
 # Logs clean up
 sudo logrotate --force /etc/logrotate.conf

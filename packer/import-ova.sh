@@ -30,3 +30,6 @@ do
     sleep 30
   fi
 done
+echo "OVA Import status is $RESPONSE"
+AMI_ID=${echo $IMPORT_TASK | jq }
+echo "Imported AMI ID is:${AMI_ID}"
