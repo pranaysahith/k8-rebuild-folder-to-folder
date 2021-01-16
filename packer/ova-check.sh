@@ -14,6 +14,6 @@ done
 echo "Upload Completed !!!"
 
 BUCKET=$(cat packer/ova-export.json | jq -r .S3Bucket)
-OBJECT="$(aws s3 ls $BUCKET/vms/SOW-REST/ | sort | tail -n 1 | awk '{print $4}')"
+OBJECT="$(aws s3 ls $BUCKET/vms/k8-rebuild-folder-to-folder/ | sort | tail -n 1 | awk '{print $4}')"
 aws s3 mv s3://${BUCKET}/vms/k8-rebuild-folder-to-folder/${OBJECT} s3://${BUCKET}/vms/k8-rebuild-folder-to-folder/${OVA_NAME}
 
