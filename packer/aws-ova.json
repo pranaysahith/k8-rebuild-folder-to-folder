@@ -58,15 +58,6 @@
             "type": "shell",
             "script": "./packer/setup/cleanup.sh",
             "execute_command": "chmod +x {{.Path}}; sudo {{.Path}}"
-        },
-        {
-         "type": "shell-local",
-         "inline": "aws ec2 create-instance-export-task --region {{user `region`}} --instance-id {{build `ID`}} --target-environment vmware --export-to-s3-task file://packer/ova-export.json > out.json"
-        },
-        {
-            "type": "shell-local",
-            "script": "packer/ova-check.sh",
-            "environment_vars": "OVA_NAME=k8-rebuild-folder-to-folder-{{user `github_sha`}}.ova"
         }
       ]
   }
