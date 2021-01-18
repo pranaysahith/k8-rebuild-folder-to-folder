@@ -7,7 +7,7 @@ env:
 # events but only for the master branch
 on:
   push:
-    branches: [ main, cicd_workflow ]
+    branches: [ main ]
   workflow_dispatch:
     inputs:
       import_ova:
