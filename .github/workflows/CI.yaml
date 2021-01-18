@@ -58,7 +58,7 @@ jobs:
       if: github.event.inputs.import_ova == 'true'
       run: |
         chmod +x packer/import-ova.sh
-        # ./packer/import-ova.sh k8-rebuild-folder-to-folder-${{ github.sha }}.ova
+        ./packer/import-ova.sh k8-rebuild-folder-to-folder-${{ github.sha }}.ova
 
   deploy-ami:
     runs-on: ubuntu-latest
