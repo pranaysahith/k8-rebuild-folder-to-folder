@@ -78,7 +78,7 @@ jobs:
         run: |
           ami_id=$(aws ec2 describe-images --filters "Name=name,Values=k8-rebuild-folder-to-folder-${{ github.sha }}" --query 'Images[*].[ImageId]' --output text)
           result=$(aws ec2 run-instances --image-id $ami_id --count 1 --instance-type t2.large --key-name packer --security-group-ids sg-0120400d5eefb0b9e --tag-specifications 'ResourceType=instance, Tags=[{Key=Name,Value=dev-k8-rebuild-folder-to-folder}, {Key=Team, Value=k8-proxy/k8-rebuild-folder-to-folder}, {Key=Owner, Value=githubactionAMIpacker}, {Key=AMI_Name, Value=k8-rebuild-folder-to-folder-${{ github.sha }}}]')
-          sleep 10m
+          sleep 1m
           instance_id=$(echo $result | jq -r ".Instances[0].InstanceId")
           echo "$instance_id is created."
           instance_description=$(aws ec2 describe-instances --instance-ids $instance_id)

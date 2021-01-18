@@ -33,3 +33,4 @@
     ```
     ./packer/mount-volume.sh </mount/path>
     ```
+- The mount path created above can be used in the docker-compose to attach it to the file handler docker container.

@@ -14,27 +14,26 @@
         "instance_type": "t2.medium",
         "region": "{{user `region`}}",
         "secret_key": "{{user `aws_secret_key`}}",
-        "ssh_username": "ec2-user",
+        "ssh_username": "ubuntu",
         "ssh_timeout": "20m",
         "type": "amazon-ebs",
         "ami_regions": ["eu-west-1"],
-        "source_ami": "ami-01720b5f421cf0179",
+        "source_ami": "ami-095a8a535ea59089a",
         "tags": {
-            "OS_Version": "Amazon Linux 2",
+            "OS_Version": "Ubuntu-18.04",
             "Base_AMI_Name": "{{ .SourceAMIName }}",
-            "Name": "k8-rebuild-folder-to-folder"
+            "Name": "k8-rebuild"
         },
         "run_tags": {
-            "Name": "Packer Builder k8-rebuild-folder-to-folder",
+            "Name": "Packer Builder k8-rebuild",
             "Team": "k8-proxy/k8-rebuild",
             "Owner": "githubactionAMIpacker"
         },
         "security_group_ids": "{{user `security_group_ids`}}",
         "launch_block_device_mappings": [
           {
-            "device_name": "/dev/xvda",
+            "device_name": "/dev/sda1",
             "volume_type": "gp2",
-            "volume_size": 20,
             "delete_on_termination": true
           }
         ]
@@ -58,6 +57,15 @@
             "type": "shell",
             "script": "./packer/setup/cleanup.sh",
             "execute_command": "chmod +x {{.Path}}; sudo {{.Path}}"
+        },
+        {
+         "type": "shell-local",
+         "inline": "aws ec2 create-instance-export-task --region {{user `region`}} --instance-id {{build `ID`}} --target-environment vmware --export-to-s3-task file://packer/ova-export.json > out.json"
+        },
+        {
+            "type": "shell-local",
+            "script": "packer/ova-check.sh",
+            "environment_vars": "OVA_NAME=k8-rebuild-folder-to-folder-{{user `github_sha`}}.ova"
         }
       ]
   }
