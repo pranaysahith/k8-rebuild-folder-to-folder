@@ -135,3 +135,4 @@ jobs:
             echo $block_id $MOUNT_PATH xfs defaults,nofail 0 2 | sudo tee -a /etc/fstab
             sudo umount $MOUNT_PATH
             sudo mount -a
+            cd $MOUNT_PATH && mkdir -p input && mkdir -p output && mkdir -p error && mkdir -p log
