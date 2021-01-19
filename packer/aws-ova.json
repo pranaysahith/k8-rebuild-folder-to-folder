@@ -23,10 +23,10 @@
         "tags": {
             "OS_Version": "Ubuntu-18.04",
             "Base_AMI_Name": "{{ .SourceAMIName }}",
-            "Name": "k8-rebuild"
+            "Name": "k8-rebuild-folder-to-folder"
         },
         "run_tags": {
-            "Name": "Packer Builder k8-rebuild",
+            "Name": "Packer Builder k8-rebuild-folder-to-folder",
             "Team": "k8-proxy/k8-rebuild",
             "Owner": "githubactionAMIpacker"
         },
