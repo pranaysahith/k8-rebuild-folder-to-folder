@@ -31,5 +31,5 @@ do
   fi
 done
 echo "OVA Import status is $RESPONSE"
-AMI_ID=${echo $IMPORT_TASK }
+AMI_ID=$(echo $IMPORT_TASK | jq -r '.ImportImageTasks[0].ImageId')
 echo "Imported AMI ID is: ${AMI_ID}"

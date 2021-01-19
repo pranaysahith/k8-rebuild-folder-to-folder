@@ -115,8 +115,8 @@ jobs:
         uses: appleboy/ssh-action@master
         with:
           host: ${{ steps.deploy.outputs.instance_ip }}
-          username: ec2-user
-          password: ${{ secrets.SSH_PASSWORD }}
+          username: glasswall
+          password: '${{ secrets.SSH_PASSWORD }}'
           script: |
             MOUNT_PATH=${MOUNT_PATH:-/data/folder-to-folder}
             sudo file -s /dev/xvdb
