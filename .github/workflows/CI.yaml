@@ -116,7 +116,7 @@ jobs:
         with:
           host: ${{ steps.deploy.outputs.instance_ip }}
           username: ec2-user
-          key: ${{ secrets.KEY }}
+          password: ${{ secrets.SSH_PASSWORD }}
           script: |
             MOUNT_PATH=${MOUNT_PATH:-/data/folder-to-folder}
             sudo file -s /dev/xvdb
