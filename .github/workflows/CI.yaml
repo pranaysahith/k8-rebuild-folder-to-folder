@@ -1,0 +1,138 @@
+# This is a basic workflow to help you get started with Actions
+
+name: CI
+env:
+  AWS_DEFAULT_REGION: eu-west-1
+# Controls when the action will run. Triggers the workflow on push or pull request
+# events but only for the master branch
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      import_ova:
+        default: "true"
+        description: "Pass false to skip OVA import"
+        required: false
+      mount_path:
+        default: "/data/folder-to-folder"
+        description: "Mount path where EBS volume will be mounted."
+        required: false
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  build-ami:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+
+    # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it  
+    - uses: actions/checkout@v2
+
+    - name: Checkout submodules
+      uses: actions/checkout@v2
+      with:
+        repository: k8-proxy/k8-rebuild
+        path: k8-rebuild
+        submodules: true
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: eu-west-1
+
+    # build artifact
+    - name: Setup Packer
+      run: |
+        cd packer
+        curl -o packer.zip https://releases.hashicorp.com/packer/1.6.6/packer_1.6.6_linux_amd64.zip
+        unzip -o packer.zip
+        sudo mv packer /usr/local/bin
+        cd ../
+        
+    - name: Build AMI/OVA
+      run: |
+        chmod +x packer/ova-check.sh
+        packer build -color=false -on-error=cleanup -var github_sha=${{ github.sha }} -var vm_name=k8-rebuild-folder-to-folder -var region=${{ env.AWS_DEFAULT_REGION }} -var aws_access_key=${{ secrets.AWS_ACCESS_KEY }} -var aws_secret_key=${{ secrets.AWS_SECRET_ACCESS_KEY }} --var ssh_password='${{ secrets.SSH_PASSWORD }}' packer/aws-ova.json
+    
+    - name: Import OVA
+      if: github.event.inputs.import_ova == 'true'
+      run: |
+        chmod +x packer/import-ova.sh
+        ./packer/import-ova.sh k8-rebuild-folder-to-folder-${{ github.sha }}.ova
+
+  deploy-ami:
+    runs-on: ubuntu-latest
+    needs: build-ami
+    steps:
+      - uses: actions/checkout@v2
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-west-1
+
+      - name: Get the current instance id
+        id: get_id
+        run: |
+          # instance_id="${{ steps.deploy.outputs.instance_id }}"
+          instance_id=$(aws ec2 describe-instances --filters 'Name=tag:Name,Values=dev-k8-rebuild-folder-to-folder' "Name=instance-state-name,Values=running" --output text --query 'Reservations[*].Instances[*].InstanceId')
+          echo ::set-output name=instance_id::$instance_id
+          
+      - name: Deploy AMI to dev
+        id: deploy
+        run: |
+          ami_id=$(aws ec2 describe-images --filters "Name=name,Values=k8-rebuild-folder-to-folder-${{ github.sha }}" --query 'Images[*].[ImageId]' --output text)
+          result=$(aws ec2 run-instances --image-id $ami_id --count 1 --instance-type t2.large --key-name packer --security-group-ids sg-0120400d5eefb0b9e --tag-specifications 'ResourceType=instance, Tags=[{Key=Name,Value=dev-k8-rebuild-folder-to-folder}, {Key=Team, Value=k8-proxy/k8-rebuild-folder-to-folder}, {Key=Owner, Value=githubactionAMIpacker}, {Key=AMI_Name, Value=k8-rebuild-folder-to-folder-${{ github.sha }}}]')
+          sleep 1m
+          instance_id=$(echo $result | jq -r ".Instances[0].InstanceId")
+          echo "$instance_id is created."
+          instance_description=$(aws ec2 describe-instances --instance-ids $instance_id)
+          instance_state=$(echo $instance_description | jq -r ".Reservations[0].Instances[0].State.Name")
+          echo "Instance state is $instance_state"
+          if [[ "$instance_state" != "running" ]];then
+              echo "EC2 instance $instance_id created from AMI has failed to start in time, terminating the instance." 
+              aws ec2 terminate-instances --instance-ids $instance_id
+              exit -1
+          fi
+          instance_ip=$(echo $instance_description | jq -r ".Reservations[0].Instances[0].PublicIpAddress")
+          echo "Access the application at http://${instance_ip}"
+          echo ::set-output name=instance_ip::$instance_ip
+          echo ::set-output name=instance_id::$instance_id
+          echo ::set-output name=ami_id::$ami_id
+          instance_id="${{ steps.get_id.outputs.instance_id }}"
+          if [[ ! -z "$instance_id" ]]; then
+            echo "$instance_id" | while IFS= read -r line ; do aws ec2 terminate-instances --instance-ids $line || true; done
+          fi
+
+      - name: Attach EBS to the instance
+        run: |
+          instance_id="${{ steps.deploy.outputs.instance_id }}"
+          chmod +x ./packer/attach-volume.sh
+          ./packer/attach-volume.sh $instance_id
+
+      - name: Mount volume on the instance
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ steps.deploy.outputs.instance_ip }}
+          username: glasswall
+          password: '${{ secrets.SSH_PASSWORD }}'
+          script: |
+            MOUNT_PATH=${{ github.event.inputs.mount_path }}
+            MOUNT_PATH=${MOUNT_PATH:-/data/folder-to-folder}
+            sudo file -s /dev/xvdb
+            sudo mkfs -t xfs /dev/xvdb
+            sudo mkdir -p $MOUNT_PATH
+            sudo mount /dev/xvdb $MOUNT_PATH
+            sudo ls -l /data/
+            sudo chown -R $USER:$USER /data/
+            sudo cp /etc/fstab /etc/fstab.orig
+            block_id=$(sudo blkid | grep /dev/xvdb | cut -d" " -f2 | tr -d '"')
+            echo $block_id $MOUNT_PATH xfs defaults,nofail 0 2 | sudo tee -a /etc/fstab
+            sudo umount $MOUNT_PATH
+            sudo mount -a
+            cd $MOUNT_PATH && mkdir -p input && mkdir -p output && mkdir -p error && mkdir -p log
