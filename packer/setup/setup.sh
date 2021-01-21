@@ -4,8 +4,7 @@
 sudo apt-get update
 
 # get source code
-git clone https://github.com/pranaysahith/k8-rebuild-folder-to-folder.git && cd k8-rebuild-folder-to-folder # TODO: update repo org name.
-git checkout cicd_workflow # TODO: remove this line.
+git clone https://github.com/k8-proxy/k8-rebuild-folder-to-folder.git && cd k8-rebuild-folder-to-folder # TODO: update repo org name.
 git clone https://github.com/k8-proxy/k8-rebuild.git --recursive && cd k8-rebuild && git submodule foreach git pull origin main && cd ../
 
 # build docker images

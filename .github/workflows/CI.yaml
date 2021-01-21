@@ -11,7 +11,7 @@ on:
   workflow_dispatch:
     inputs:
       import_ova:
-        default: "true"
+        default: "false"
         description: "Pass false to skip OVA import"
         required: false
       mount_path:
@@ -109,13 +109,7 @@ jobs:
             echo "$instance_id" | while IFS= read -r line ; do aws ec2 terminate-instances --instance-ids $line || true; done
           fi
 
-      - name: Attach EBS to the instance
-        run: |
-          instance_id="${{ steps.deploy.outputs.instance_id }}"
-          chmod +x ./packer/attach-volume.sh
-          ./packer/attach-volume.sh $instance_id
-
-      - name: Mount volume on the instance
+      - name: Mount EFS on the instance
         uses: appleboy/ssh-action@master
         with:
           host: ${{ steps.deploy.outputs.instance_ip }}
@@ -124,15 +118,7 @@ jobs:
           script: |
             MOUNT_PATH=${{ github.event.inputs.mount_path }}
             MOUNT_PATH=${MOUNT_PATH:-/data/folder-to-folder}
-            sudo file -s /dev/xvdb
-            sudo mkfs -t xfs /dev/xvdb
             sudo mkdir -p $MOUNT_PATH
-            sudo mount /dev/xvdb $MOUNT_PATH
-            sudo ls -l /data/
-            sudo chown -R $USER:$USER /data/
-            sudo cp /etc/fstab /etc/fstab.orig
-            block_id=$(sudo blkid | grep /dev/xvdb | cut -d" " -f2 | tr -d '"')
-            echo $block_id $MOUNT_PATH xfs defaults,nofail 0 2 | sudo tee -a /etc/fstab
-            sudo umount $MOUNT_PATH
-            sudo mount -a
+            sudo mount -t nfs4 -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport fs-04997e31.efs.eu-west-1.amazonaws.com:/ $MOUNT_PATH
+            sudo chown -R $USER:$USER $MOUNT_PATH
             cd $MOUNT_PATH && mkdir -p input && mkdir -p output && mkdir -p error && mkdir -p log
