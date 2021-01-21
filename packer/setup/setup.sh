@@ -4,7 +4,8 @@
 sudo apt-get update
 
 # get source code
-git clone https://github.com/k8-proxy/k8-rebuild-folder-to-folder.git && cd k8-rebuild-folder-to-folder # TODO: update repo org name.
+cd ~
+git clone https://github.com/k8-proxy/k8-rebuild-folder-to-folder.git && cd k8-rebuild-folder-to-folder
 git clone https://github.com/k8-proxy/k8-rebuild.git --recursive && cd k8-rebuild && git submodule foreach git pull origin main && cd ../
 
 # build docker images
@@ -26,3 +27,4 @@ sudo chmod +x /usr/local/bin/docker-compose
 
 # start applications
 sudo docker-compose up -d
+sleep 10s
