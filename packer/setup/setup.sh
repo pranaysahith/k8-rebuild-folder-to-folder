@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# update
+sudo apt-get update
+
 # get source code
 git clone https://github.com/pranaysahith/k8-rebuild-folder-to-folder.git && cd k8-rebuild-folder-to-folder # TODO: update repo org name.
 git checkout cicd_workflow # TODO: remove this line.

@@ -14,6 +14,10 @@ on:
         default: "true"
         description: "Pass false to skip OVA import"
         required: false
+      mount_path:
+        default: "/data/folder-to-folder"
+        description: "Mount path where EBS volume will be mounted."
+        required: false
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
@@ -115,9 +119,10 @@ jobs:
         uses: appleboy/ssh-action@master
         with:
           host: ${{ steps.deploy.outputs.instance_ip }}
-          username: ec2-user
-          password: ${{ secrets.SSH_PASSWORD }}
+          username: glasswall
+          password: '${{ secrets.SSH_PASSWORD }}'
           script: |
+            MOUNT_PATH=${{ github.event.inputs.mount_path }}
             MOUNT_PATH=${MOUNT_PATH:-/data/folder-to-folder}
             sudo file -s /dev/xvdb
             sudo mkfs -t xfs /dev/xvdb
@@ -130,3 +135,4 @@ jobs:
             echo $block_id $MOUNT_PATH xfs defaults,nofail 0 2 | sudo tee -a /etc/fstab
             sudo umount $MOUNT_PATH
             sudo mount -a
+            cd $MOUNT_PATH && mkdir -p input && mkdir -p output && mkdir -p error && mkdir -p log
