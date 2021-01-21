@@ -1,14 +1,20 @@
 #!/bin/bash
 
-OVA_NAME=${OVA_NAME:-$1}
+OVA_PATH=$1 # example argument: s3://glasswall-sow-ova/vms/k8-rebuild-folder-to-folder/some.ova
+if [[ -z "$OVA_PATH" ]]; then
+  echo "Pleas pass s3 path of OVA as argument. Example: s3://glasswall-sow-ova/some.ova"
+  exit -1
+fi
+BUCKET_NAME=$( echo $OVA_PATH | sed 's|s3://||' | cut -d"/" -f1 )
+FILE_PATH=$( echo $OVA_PATH | sed 's|s3://||' | cut -d"/" -f 2- )
 cat > packer/containers.json <<EOF
 [
     {
         "Description": "filedrop OVA",
         "Format": "ova",
         "UserBucket": {
-            "S3Bucket": "glasswall-sow-ova",
-            "S3Key": "vms/k8-rebuild-folder-to-folder/${OVA_NAME}"
+            "S3Bucket": "$BUCKET_NAME",
+            "S3Key": "$FILE_PATH"
       }
     }
 ]
