@@ -249,8 +249,7 @@ $ aws efs create-mount-target \
   $ git clone https://github.com/k8-proxy/k8-rebuild-folder-to-folder.git 
   $ cd k8-rebuild-folder-to-folder
   $ chmod +x packer/mount-efs.sh
-  $ ./packer/mount-efs.sh <mount path> <file system domain>
-  $ ./packer/mount-efs-volume.sh </mount/path>
+  $ ./packer/mount-efs.sh <file system domain> <mount path> 
 ```
   * In mount path, there are four folders: Input, Output, Error and logs which are used for file handling service
   
