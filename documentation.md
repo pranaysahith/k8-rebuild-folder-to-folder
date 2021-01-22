@@ -240,16 +240,16 @@ $ aws efs create-mount-target \
   
 ### Mounting EFS Volume
 
-* Mount target created in above step can be attached and mounted to ec2 instance by running below command
-```shell 
-  $ ./packer/attch-efs-volume.sh <INSTANCE_ID> <FileSystemId>
-```
 * For `k8-f2f-service` instance, run below command which will mount EFS volume at `/data/folder-to-folder`
 ```shell
-  $ ./packer/mount-efs-volume.sh
+  $ ./packer/mount-efs.sh /data/folder-to-folder <file system domain>
 ```
 * For `k8-f2f-user` instance, EFS volume can be mounted at any required path by passing mount path as an argument 
 ```shell
+  $ git clone https://github.com/k8-proxy/k8-rebuild-folder-to-folder.git 
+  $ cd k8-rebuild-folder-to-folder
+  $ chmod +x packer/mount-efs.sh
+  $ ./packer/mount-efs.sh <mount path> <file system domain>
   $ ./packer/mount-efs-volume.sh </mount/path>
 ```
   * In mount path, there are four folders: Input, Output, Error and logs which are used for file handling service
