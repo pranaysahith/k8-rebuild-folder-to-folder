@@ -32,5 +32,6 @@ sudo curl -L "https://github.com/docker/compose/releases/download/1.27.4/docker-
 sudo chmod +x /usr/local/bin/docker-compose
 
 # start applications
+mkdir -p /data/folder-to-folder/input && mkdir -p /data/folder-to-folder/output && mkdir -p /data/folder-to-folder/error && mkdir -p /data/folder-to-folder/log
 sudo docker-compose up -d
 sleep 10s
