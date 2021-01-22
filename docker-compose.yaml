@@ -19,3 +19,15 @@ services:
       - 80:80
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
+  file-handling:
+    build:
+      context: .
+      dockerfile: Source/Service/Glasswall.EBS.Rebuild/Dockerfile
+    environment:
+      REBUILD_API_BASE_URL: "k8-rebuild-rest-api:8888?"
+      CRONJOB_PERIOD: 15
+      FORLDERS_PATH: /data/folder-to-folder
+      DOTNET_ENVIRONMENT: Development
+    restart: unless-stopped
+    volumes:
+      - /data/folder-to-folder:/data/folder-to-folder
