@@ -3,7 +3,9 @@
 # get source code
 cd ~
 git clone https://github.com/k8-proxy/k8-rebuild-folder-to-folder.git && cd k8-rebuild-folder-to-folder
+git checkout test-docker-compose # TODO: remove this line
 git clone https://github.com/k8-proxy/k8-rebuild.git --recursive && cd k8-rebuild && git submodule foreach git pull origin main && cd ../
+cd k8-rebuild-rest-api && git submodule foreach git pull origin master && cd ../
 
 # install docker and docker-compose
 END=$((SECONDS+300))
