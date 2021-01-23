@@ -56,8 +56,11 @@
         },
         {
           "type": "shell",
-          "script": "./packer/setup/cleanup.sh",
-          "execute_command": "chmod +x {{.Path}}; sudo {{.Path}}"
+          "inline": [
+            "chmod +x /tmp/setup/cleanup.sh",
+            "cd /tmp/setup",
+            "./cleanup.sh"
+          ]
         },
         {
          "type": "shell-local",
