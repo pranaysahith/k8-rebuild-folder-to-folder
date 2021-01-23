@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# increase root partition size to max space available
+sudo growpart /dev/xvda 2 
+sudo resize2fs /dev/xvda2
+
 # get source code
 cd ~
 git clone https://github.com/k8-proxy/k8-rebuild-folder-to-folder.git && cd k8-rebuild-folder-to-folder
