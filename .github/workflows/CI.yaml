@@ -14,10 +14,6 @@ on:
         default: "false"
         description: "Pass false to skip OVA import"
         required: false
-      mount_path:
-        default: "/data/folder-to-folder"
-        description: "Mount path where EBS volume will be mounted."
-        required: false
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
@@ -116,8 +112,7 @@ jobs:
           username: glasswall
           password: '${{ secrets.SSH_PASSWORD }}'
           script: |
-            MOUNT_PATH=${{ github.event.inputs.mount_path }}
-            MOUNT_PATH=${MOUNT_PATH:-/data/folder-to-folder}
+            MOUNT_PATH=/data/folder-to-folder
             sudo mkdir -p $MOUNT_PATH
             # wait till apt is available
             END=$((SECONDS+300))
