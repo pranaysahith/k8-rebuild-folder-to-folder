@@ -52,7 +52,7 @@ jobs:
     - name: Build AMI/OVA
       run: |
         chmod +x packer/ova-check.sh
-        TMPDIR=~/build packer build -color=false -on-error=cleanup -var github_sha=${{ github.sha }} -var vm_name=k8-rebuild-folder-to-folder -var region=${{ env.AWS_DEFAULT_REGION }} -var aws_access_key=${{ secrets.AWS_ACCESS_KEY }} -var aws_secret_key=${{ secrets.AWS_SECRET_ACCESS_KEY }} --var ssh_password='${{ secrets.SSH_PASSWORD }}' packer/aws-ova.json
+        TMPDIR=/var/tmp packer build -color=false -on-error=cleanup -var github_sha=${{ github.sha }} -var vm_name=k8-rebuild-folder-to-folder -var region=${{ env.AWS_DEFAULT_REGION }} -var aws_access_key=${{ secrets.AWS_ACCESS_KEY }} -var aws_secret_key=${{ secrets.AWS_SECRET_ACCESS_KEY }} --var ssh_password='${{ secrets.SSH_PASSWORD }}' packer/aws-ova.json
     
     - name: Import OVA
       if: github.event.inputs.import_ova == 'true'
