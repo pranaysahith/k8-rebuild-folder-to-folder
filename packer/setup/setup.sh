@@ -1,9 +1,14 @@
 #!/bin/bash
 
+# increase root partition size to max space available
+sudo growpart /dev/xvda 2 
+sudo resize2fs /dev/xvda2
+
 # get source code
 cd ~
 git clone https://github.com/k8-proxy/k8-rebuild-folder-to-folder.git && cd k8-rebuild-folder-to-folder
 git clone https://github.com/k8-proxy/k8-rebuild.git --recursive && cd k8-rebuild && git submodule foreach git pull origin main && cd ../
+cd k8-rebuild-rest-api && git submodule foreach git pull origin master && cd ../
 
 # install docker and docker-compose
 END=$((SECONDS+300))
@@ -32,5 +37,7 @@ sudo curl -L "https://github.com/docker/compose/releases/download/1.27.4/docker-
 sudo chmod +x /usr/local/bin/docker-compose
 
 # start applications
+sudo mkdir -p /data/folder-to-folder/input && sudo mkdir -p /data/folder-to-folder/output && sudo mkdir -p /data/folder-to-folder/error && sudo mkdir -p /data/folder-to-folder/log
+sudo chown -R $USER:$USER /data/folder-to-folder
 sudo docker-compose up -d
 sleep 10s

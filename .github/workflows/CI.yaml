@@ -14,10 +14,6 @@ on:
         default: "false"
         description: "Pass false to skip OVA import"
         required: false
-      mount_path:
-        default: "/data/folder-to-folder"
-        description: "Mount path where EBS volume will be mounted."
-        required: false
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
@@ -56,7 +52,7 @@ jobs:
     - name: Build AMI/OVA
       run: |
         chmod +x packer/ova-check.sh
-        packer build -color=false -on-error=cleanup -var github_sha=${{ github.sha }} -var vm_name=k8-rebuild-folder-to-folder -var region=${{ env.AWS_DEFAULT_REGION }} -var aws_access_key=${{ secrets.AWS_ACCESS_KEY }} -var aws_secret_key=${{ secrets.AWS_SECRET_ACCESS_KEY }} --var ssh_password='${{ secrets.SSH_PASSWORD }}' packer/aws-ova.json
+        TMPDIR=/var/tmp packer build -color=false -on-error=cleanup -var github_sha=${{ github.sha }} -var vm_name=k8-rebuild-folder-to-folder -var region=${{ env.AWS_DEFAULT_REGION }} -var aws_access_key=${{ secrets.AWS_ACCESS_KEY }} -var aws_secret_key=${{ secrets.AWS_SECRET_ACCESS_KEY }} --var ssh_password='${{ secrets.SSH_PASSWORD }}' packer/aws-ova.json
     
     - name: Import OVA
       if: github.event.inputs.import_ova == 'true'
@@ -87,7 +83,7 @@ jobs:
         id: deploy
         run: |
           ami_id=$(aws ec2 describe-images --filters "Name=name,Values=k8-rebuild-folder-to-folder-${{ github.sha }}" --query 'Images[*].[ImageId]' --output text)
-          result=$(aws ec2 run-instances --image-id $ami_id --count 1 --instance-type t2.large --key-name packer --security-group-ids sg-0120400d5eefb0b9e --tag-specifications 'ResourceType=instance, Tags=[{Key=Name,Value=dev-k8-rebuild-folder-to-folder}, {Key=Team, Value=k8-proxy/k8-rebuild-folder-to-folder}, {Key=Owner, Value=githubactionAMIpacker}, {Key=AMI_Name, Value=k8-rebuild-folder-to-folder-${{ github.sha }}}]')
+          result=$(aws ec2 run-instances --image-id $ami_id --count 1 --instance-type t2.large --key-name packer --security-group-ids sg-0120400d5eefb0b9e --tag-specifications 'ResourceType=instance, Tags=[{Key=Name,Value=dev-k8-rebuild-folder-to-folder}, {Key=Team, Value=k8-proxy/k8-rebuild-folder-to-folder}, {Key=Owner, Value=githubactionAMIpacker}, {Key=AMI_Name, Value=k8-rebuild-folder-to-folder-${{ github.sha }}}]' --block-device-mappings 'DeviceName=/dev/sda1,Ebs={DeleteOnTermination=true,VolumeSize=20,VolumeType=gp2}')
           sleep 1m
           instance_id=$(echo $result | jq -r ".Instances[0].InstanceId")
           echo "$instance_id is created."
@@ -116,8 +112,7 @@ jobs:
           username: glasswall
           password: '${{ secrets.SSH_PASSWORD }}'
           script: |
-            MOUNT_PATH=${{ github.event.inputs.mount_path }}
-            MOUNT_PATH=${MOUNT_PATH:-/data/folder-to-folder}
+            MOUNT_PATH=/data/folder-to-folder
             sudo mkdir -p $MOUNT_PATH
             # wait till apt is available
             END=$((SECONDS+300))
