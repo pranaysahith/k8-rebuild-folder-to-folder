@@ -52,7 +52,7 @@ jobs:
     - name: Build AMI/OVA
       run: |
         chmod +x packer/ova-check.sh
-        BRANCH=$(${{ github.ref }} | cut -d"/" -f3)
+        BRANCH=$(echo ${{ github.ref }} | cut -d"/" -f3)
         cat >> packer/setup/env <<EOF
         BRANCH=$BRANCH
         EOF
