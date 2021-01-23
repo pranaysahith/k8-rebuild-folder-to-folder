@@ -10,3 +10,4 @@ sudo rm -rf /data/folder-to-folder/*
 sudo mount -t nfs4 -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport $EFS_DOMAIN:/ $MOUNT_PATH
 sudo chown -R $USER:$USER $MOUNT_PATH
 cd $MOUNT_PATH && mkdir -p input && mkdir -p output && mkdir -p error && mkdir -p log
+cd ~/k8-rebuild-folder-to-folder && sudo docker-compose recreate
