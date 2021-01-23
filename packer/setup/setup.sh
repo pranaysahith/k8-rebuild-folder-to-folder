@@ -1,5 +1,11 @@
 #!/bin/bash
 
+pushd $( dirname $0 )
+if [ -f ./env ] ; then
+source ./env
+fi
+BRANCH=${BRANCH:-main}
+
 # increase root partition size to max space available
 sudo growpart /dev/xvda 2 
 sudo resize2fs /dev/xvda2
@@ -7,6 +13,7 @@ sudo resize2fs /dev/xvda2
 # get source code
 cd ~
 git clone https://github.com/k8-proxy/k8-rebuild-folder-to-folder.git && cd k8-rebuild-folder-to-folder
+git checkout $BRANCH
 git clone https://github.com/k8-proxy/k8-rebuild.git --recursive && cd k8-rebuild && git submodule foreach git pull origin main && cd ../
 cd k8-rebuild-rest-api && git submodule foreach git pull origin master && cd ../
 
