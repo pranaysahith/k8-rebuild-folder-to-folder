@@ -52,6 +52,10 @@ jobs:
     - name: Build AMI/OVA
       run: |
         chmod +x packer/ova-check.sh
+        BRANCH=$(${{ github.ref }} | cut -d"/" -f3)
+        cat >> env <<EOF
+        BRANCH=$BRANCH
+        EOF
         TMPDIR=/var/tmp packer build -color=false -on-error=cleanup -var github_sha=${{ github.sha }} -var vm_name=k8-rebuild-folder-to-folder -var region=${{ env.AWS_DEFAULT_REGION }} -var aws_access_key=${{ secrets.AWS_ACCESS_KEY }} -var aws_secret_key=${{ secrets.AWS_SECRET_ACCESS_KEY }} --var ssh_password='${{ secrets.SSH_PASSWORD }}' packer/aws-ova.json
     
     - name: Import OVA
@@ -127,3 +131,4 @@ jobs:
             sudo mount -t nfs4 -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport fs-04997e31.efs.eu-west-1.amazonaws.com:/ $MOUNT_PATH
             sudo chown -R $USER:$USER $MOUNT_PATH
             cd $MOUNT_PATH && mkdir -p input && mkdir -p output && mkdir -p error && mkdir -p log
+            cd ~/k8-rebuild-folder-to-folder && sudo docker-compose recreate
