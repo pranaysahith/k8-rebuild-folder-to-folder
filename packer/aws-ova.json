@@ -55,6 +55,11 @@
             ]
         },
         {
+          "type": "shell",
+          "script": "./packer/setup/cleanup.sh",
+          "execute_command": "chmod +x {{.Path}}; sudo {{.Path}}"
+        },
+        {
          "type": "shell-local",
          "inline": "aws ec2 create-instance-export-task --region {{user `region`}} --instance-id {{build `ID`}} --target-environment vmware --export-to-s3-task file://packer/ova-export.json > out.json"
         },
