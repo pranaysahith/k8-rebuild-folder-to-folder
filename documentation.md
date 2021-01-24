@@ -181,21 +181,33 @@
     ```
 ### Creating custom AMI
 
-* To create a custom AMI, OVA file stored in S3 bucket need to be imported. Run below command to import ova file from s3 bucket and create custom AMI
 * In this documentation, we will be creating two instances. `k8-f2f-service` in which all processing happens and `k8-f2f-user` which acts as an instance for users to login and use services
+* Path to ova file for `k8-f2f-service` : `s3://glasswall-sow-ova/vms/k8-rebuild-folder-to-folder/k8-rebuild-folder-to-folder-311282e30f06def19ec5f2f4127afbe7a89bb6a9.ova`
+* Path to ova file for `k8-f2f-user` : `s3://glasswall-sow-ova/ova/Ubuntu18.04.5.ova`
+* To create a custom AMI, OVA file stored in S3 bucket need to be imported. Run below command from *your local machine* to import ova file from s3 bucket and create custom AMI
 
 `k8-f2f-service`:
 
 ```shell 
+  $ git clone https://github.com/k8-proxy/k8-rebuild-folder-to-folder.git 
+  $ cd k8-rebuild-folder-to-folder
+  $ chmod +x packer/import-ova.sh
   $ ./packer/import-ova.sh <Service_OVA_Path>
-  Example: ./packer/import-ova.sh s3://glasswall-sow-ova/some.ova
+  Example: $ ./packer/import-ova.sh s3://glasswall-sow-ova/vms/k8-rebuild-folder-to-folder/k8-rebuild-folder-to-folder-311282e30f06def19ec5f2f4127afbe7a89bb6a9.ova
  ```
  `k8-f2f-user`:
 
 ```shell 
+  $ git clone https://github.com/k8-proxy/k8-rebuild-folder-to-folder.git 
+  $ cd k8-rebuild-folder-to-folder
+  $ chmod +x packer/import-ova.sh
   $ ./packer/import-ova.sh <User_OVA_Path>
-  Example: ./packer/import-ova.sh s3://glasswall-sow-ova/some.ova
+  Example: $ ./packer/import-ova.sh s3://glasswall-sow-ova/ova/Ubuntu18.04.5.ova
 ```
+  - Incase above command gives error similar to `Couldn't find package jq` , install `jq` package which is used for parsing JSON by running below command
+  ```shell 
+  $ sudo apt install jq
+  ```
 * Once import task is completed, above command produces output similar to `Imported AMI ID is: <AMI ID>`. Note the value of AMI ID which cane be used in launching instance
   
 ### Launching Instance
@@ -203,6 +215,8 @@
 * From the dashboard, choose `Launch instance`, and on the top right, choose `Search by Systems Manager` Parameter and search by `<AMI ID>` present in output of above step
 * Using AMIs created in above steps, launch both `k8-f2f-service` and `k8-f2f-user` instances.
 * While creating ec2 instance, configure security group of ec2 instance to allow inbound connections to 22,80,443 ports
+* Assign a public ip or keep instance in private subnet and assign a NAT gateway for enabling outbound internet access
+* Incase instance is created in private subnet, ensure SSH access is available either through bastion host or VPN service
 * After instance is created, Login to created instance by using below command
 ```shell
   $ ssh glasswall@<instanceip>
@@ -212,7 +226,7 @@
 ```shell
   $ passwd glasswall
 ```
-* After process of instance creation is completed proceed to create and mount EFS volume which is used to store input and processed output files
+* After process of instance creation is completed, proceed to creation and mounting of EFS volume which is used to store input and processed output files
 
 ### Creating and mounting EFS Volume
 
@@ -249,19 +263,22 @@ $ aws efs create-mount-target \
   $ git clone https://github.com/k8-proxy/k8-rebuild-folder-to-folder.git 
   $ cd k8-rebuild-folder-to-folder
   $ chmod +x packer/mount-efs.sh
-  $ ./packer/mount-efs.sh <file system domain> <mount path> 
+  $ ./packer/mount-efs.sh <mount path> <file system domain> 
 ```
   * In mount path, there are four folders: Input, Output, Error and logs which are used for file handling service
   
 ### Running Service
-* To run folder to folder service, login to `k8-f2f-service` using SSH and Zip the files that needs to be processed. Copy the zip file to `<mount path>/input`
+* To run folder to folder service, login to `k8-f2f-service` using SSH and Zip the files that needs to be processed. Copy the zip file to `<mount path>/input`. Note that for `k8-f2f-service` instance, mount path will be `/data/folder-to-folder`
 ```script
   $ zip files .
   $ cp <zip name> <mountpath>/input
 ```
 * Once zip file is copied, File handling service will automatically pick up the folder and will process it 
-* After processing is completed, data is automatically moved to `<mount path>/output`
-* Incase of any errors during processing, data will be moved to `<mount path>/error`
+* After processing is completed, zip file is automatically moved to `<mount path>/output`. It can be checked by running below command. 
+  ```shell
+  $ ls <mount path>/output
+  ```
+* Incase of any errors during processing, zip file will be moved to `<mount path>/error`
 * Logs of processing can be found in `<mount path>/logs`
 * Similarly, files can be supplied for processing by logging into `k8-f2f-user` instance using SSH and copying zip files to `<mount path>/input`
 
