@@ -1,5 +1,6 @@
 #!/bin/bash
 
+cd $( dirname $0 )
 OVA_PATH=$1 # example argument: s3://glasswall-sow-ova/vms/k8-rebuild-folder-to-folder/some.ova
 if [[ -z "$OVA_PATH" ]]; then
   echo "Pleas pass s3 path of OVA as argument. Example: s3://glasswall-sow-ova/some.ova"
@@ -7,10 +8,10 @@ if [[ -z "$OVA_PATH" ]]; then
 fi
 BUCKET_NAME=$( echo $OVA_PATH | sed 's|s3://||' | cut -d"/" -f1 )
 FILE_PATH=$( echo $OVA_PATH | sed 's|s3://||' | cut -d"/" -f 2- )
-cat > packer/containers.json <<EOF
+cat > containers.json <<EOF
 [
     {
-        "Description": "filedrop OVA",
+        "Description": "k8-rebuild-folder-to-folder",
         "Format": "ova",
         "UserBucket": {
             "S3Bucket": "$BUCKET_NAME",
@@ -19,8 +20,9 @@ cat > packer/containers.json <<EOF
     }
 ]
 EOF
-IMPORT_TASK=$(aws ec2 import-image --description "k8-rebuild-folder-to-folder" --disk-containers "file://packer/containers.json")
+IMPORT_TASK=$(aws ec2 import-image --description "k8-rebuild-folder-to-folder" --disk-containers "file://containers.json")
 IMPORT_ID=$(echo $IMPORT_TASK | jq -r .ImportTaskId)
+echo "Started importing with task id: $IMPORT_ID"
 until [ "$RESPONSE" = "completed" ]
 do
   RESPONSE=$(aws ec2 describe-import-image-tasks --import-task-ids $IMPORT_ID | jq -r '.ImportImageTasks[0].Status')
