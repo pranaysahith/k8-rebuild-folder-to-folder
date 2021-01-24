@@ -1,21 +1,38 @@
 #!/bin/bash
 
-# update
-sudo apt-get update
+pushd $( dirname $0 )
+if [ -f ./env ] ; then
+source ./env
+fi
+BRANCH=${BRANCH:-main}
+
+# increase root partition size to max space available
+sudo growpart /dev/xvda 2 
+sudo resize2fs /dev/xvda2
 
 # get source code
-git clone https://github.com/pranaysahith/k8-rebuild-folder-to-folder.git && cd k8-rebuild-folder-to-folder # TODO: update repo org name.
-git checkout cicd_workflow # TODO: remove this line.
+cd ~
+git clone https://github.com/k8-proxy/k8-rebuild-folder-to-folder.git && cd k8-rebuild-folder-to-folder
+git checkout $BRANCH
 git clone https://github.com/k8-proxy/k8-rebuild.git --recursive && cd k8-rebuild && git submodule foreach git pull origin main && cd ../
+cd k8-rebuild-rest-api && git submodule foreach git pull origin master && cd ../
 
-
-# build docker images
-sudo apt-get install \
-    apt-transport-https \
-    ca-certificates \
-    curl \
-    gnupg-agent \
-    software-properties-common -y
+# install docker and docker-compose
+END=$((SECONDS+300))
+# retry till apt is available
+while [ $SECONDS -lt $END ]; do
+    sleep 10s
+    sudo apt update
+        sudo apt-get install \
+        apt-transport-https \
+        ca-certificates \
+        curl \
+        gnupg-agent \
+        software-properties-common -y
+    if [[ $? -eq 0 ]];then
+    break
+    fi
+done
 curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
 sudo add-apt-repository \
    "deb [arch=amd64] https://download.docker.com/linux/ubuntu \
@@ -27,4 +44,7 @@ sudo curl -L "https://github.com/docker/compose/releases/download/1.27.4/docker-
 sudo chmod +x /usr/local/bin/docker-compose
 
 # start applications
+sudo mkdir -p /data/folder-to-folder/input && sudo mkdir -p /data/folder-to-folder/output && sudo mkdir -p /data/folder-to-folder/error && sudo mkdir -p /data/folder-to-folder/log
+sudo chown -R $USER:$USER /data/folder-to-folder
 sudo docker-compose up -d
+sleep 10s

@@ -1,0 +1,4 @@
+# This is a demonstration environment variable, the following commented lines are the defaults
+# You can uncomment and change the value as desired for the build
+
+#BRANCH=main
