@@ -81,7 +81,7 @@ jobs:
         run: |
           # instance_id="${{ steps.deploy.outputs.instance_id }}"
           BRANCH=$(echo ${{ github.ref }} | cut -d"/" -f3)
-          instance_id=$(aws ec2 describe-instances --filters "Name=tag:Name,Values=${{ $BRANCH }}-k8-rebuild-folder-to-folder" "Name=instance-state-name,Values=running" --output text --query 'Reservations[*].Instances[*].InstanceId')
+          instance_id=$(aws ec2 describe-instances --filters "Name=tag:Name,Values=${BRANCH}-k8-rebuild-folder-to-folder" "Name=instance-state-name,Values=running" --output text --query 'Reservations[*].Instances[*].InstanceId')
           echo ::set-output name=instance_id::$instance_id
           
       - name: Deploy AMI to dev
