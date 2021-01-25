@@ -11,12 +11,15 @@
 ### Creating custom AMI
 
 * In this documentation, we will be creating two instances. `k8-f2f-service` in which all processing happens and `k8-f2f-user` which acts as an instance for users to login and use services
-* To create a custom AMI, OVA file stored in S3 bucket need to be imported. Run below command from *your local machine* to import ova file from s3 bucket and create custom AMI
+* To create a custom AMI, OVA file stored in S3 bucket need to be imported. 
 
 ```
   Service_OVA_Path   :   s3://glasswall-sow-ova/vms/k8-rebuild-folder-to-folder/k8-rebuild-folder-to-folder-f782a8ab15b1067ab31b43a7c451a8c759b76f58.ova
   User_OVA_Path      :   s3://glasswall-sow-ova/vms/k8-rebuild-folder-to-folder/user-vm/k8-rebuild-folder-to-folder-export-i-081f0825e17222660.ova  
 ```
+
+* Run below commands from *your local machine* to import ova file from s3 bucket and create custom AMI
+
 ``` 
   $ git clone https://github.com/k8-proxy/k8-rebuild-folder-to-folder.git
   $ cd k8-rebuild-folder-to-folder
@@ -28,7 +31,7 @@
   $ chmod +x ./packer/import-ova.sh
   $ ./packer/import-ova.sh <Service_OVA_Path>
 
-  Example: $ ./packer/import-ova.sh s3://glasswall-sow-ova/vms/k8-rebuild-folder-to-folder/k8-rebuild-folder-to-folder-f81add2d6180c586bb9a1d9e9cee023d89d50f3e.ova
+  Example: $ ./packer/import-ova.sh s3://glasswall-sow-ova/vms/k8-rebuild-folder-to-folder/k8-rebuild-folder-to-folder-f782a8ab15b1067ab31b43a7c451a8c759b76f58.ova
  ```
 
 * Once import task is completed, above command produces output similar to `Imported AMI ID is: <AMI ID>`. Note the value of AMI ID which can be used in launching instance.
@@ -73,7 +76,7 @@
 ```shell
   $ ssh glasswall@<instanceip>
 ```
-  - Note: Since instance is created using custom AMI, SSH authentication is allowed only by username and password combination. SSH key supplied in AWS console cannot be used
+  - Note: Since instance is created using custom AMI, SSH authentication is allowed only by username and password combination. SSH key supplied in AWS console cannot be used.
   
 * Once login is successfull, change default password using below command and enter new choosen password
 
