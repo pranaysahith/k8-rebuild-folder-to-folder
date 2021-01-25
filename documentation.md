@@ -192,8 +192,6 @@
 ### Creating custom AMI
 
 * In this documentation, we will be creating two instances. `k8-f2f-service` in which all processing happens and `k8-f2f-user` which acts as an instance for users to login and use services
-* Path to ova file for `k8-f2f-service` : `s3://glasswall-sow-ova/vms/k8-rebuild-folder-to-folder/k8-rebuild-folder-to-folder-311282e30f06def19ec5f2f4127afbe7a89bb6a9.ova`
-* Path to ova file for `k8-f2f-user` : `s3://glasswall-sow-ova/ova/Ubuntu18.04.5.ova`
 * To create a custom AMI, OVA file stored in S3 bucket need to be imported. Run below command from *your local machine* to import ova file from s3 bucket and create custom AMI
 
 ```
