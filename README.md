@@ -59,12 +59,12 @@
 
 * Select the `<AMI>` and click `Launch` button.
 
-* Select below configarature for next steps (available on bottom right corner):
+* Select below configuration for next steps (available on bottom right corner):
 
       - Choose Instance Type         :     t2.micro ( For load testing we generally use c4.8xlarge but ask to requester which flavour he wants to use )  
       - Add Storage (disk space)     :     At least 20G
       - Add Tags                     :     Can be skipped
-      - Configure Security Group     :     22, 80, 443, 2049
+      - Configure Security Group     :     22, 80, 443, 2049 (on Glasswall AWS preexisting security group launch-wizard-8 can be used)
       - Public ip                    :     Assign a public ip/ NAT gateway incase of private subnet 
       
 * Click `Review and Launch` and then `Launch`
@@ -102,7 +102,6 @@
   - VPC               : Select VPC in which `k8-f2f-service` and `k8-f2f-user` instances are created
   - Mount targets     : Select Subnet in which `k8-f2f-service` and `k8-f2f-user` instances are created 
   - Security Groups   : Select a security group in which Inbound connections to `NFS service - Port 2049` is allowed from Security group assigned to `k8-f2f-service` and `k8-f2f-user` instances
-  - 
 ```
 * Click Next on optional File system policy and review the changes and click on Create
 * Once EFS File system is created, make a note of `File System ID`
@@ -166,11 +165,11 @@
 #### Demo from `k8-f2f-service`:
 
 * To run folder to folder service, login to `k8-f2f-service` using SSH 
-* Zip the files that needs to be processed. Copy the zip file to `/data/folder-to-folder/input`
+* Copy zip files from your local machine to `/data/folder-to-folder/input`
 ```script
   $ sudo apt install zip unzip
-  $ zip -r files.zip <folder_name>/*
-  $ cp files.zip /data/folder-to-folder/input
+  $ scp /local/directory/files.zip glasswall@<k8-f2f-service IP>:/data/folder-to-folder/input
+
 ```
 * Once zip file is copied, File handling service will automatically pick up the zip file and will process it 
 
@@ -180,14 +179,17 @@
 
 * Logs of processing can be found in `/data/folder-to-folder/logs`
 
+* You can navigate to all of these folders and check for the output files. 
+
+* To move any of the output files back to your local run `scp glasswall@<k8-f2f-service IP>:/data/folder-to-folder/<ANY FOLDER>/files.zip /local/directory`
+
 #### Demo from `k8-f2f-user`:
 
 *  To run folder to folder service, login to `k8-f2f-user` using SSH 
 * Zip the files that needs to be processed. Copy the zip file to `<mount path>/input`
 ```script
   $ sudo apt install zip unzip
-  $ zip -r files.zip <folder_name>/*
-  $ cp files.zip /data/folder-to-folder/input
+  $ scp /local/directory/files.zip glasswall@<k8-f2f-user IP>:<mount path>/input
 ```
 * Once zip file is copied, File handling service will automatically pick up the zip file and will process it 
 
@@ -196,6 +198,10 @@
 * Incase of any errors during processing, data will be moved to `<mount path>/error`
 
 * Logs of processing can be found in `<mount path>/logs`
+
+* You can navigate to all of these folders and check for the output files. 
+
+* To move any of the output files back to your local run `scp glasswall@<k8-f2f-user IP>:<mount path>/<ANY FOLDER>/files.zip /local/directory`
 
 
 * Having a commong EFS file system accessible to all user instances, makes it convinent to copy input files from any instance and access processed output files from any other user instnace, not necessarily from instance from which files are copied
