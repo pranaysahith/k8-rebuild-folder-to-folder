@@ -1,10 +1,10 @@
 [
     {
-        "Description": "filedrop OVA",
+        "Description": "k8-rebuild-folder-to-folder",
         "Format": "ova",
         "UserBucket": {
             "S3Bucket": "glasswall-sow-ova",
-            "S3Key": "vms/k8-rebuild-folder-to-folder/k8-rebuild-folder-to-folder-export-i-045df75132eea5049.ova"
+            "S3Key": "vms/k8-rebuild-folder-to-folder/k8-rebuild-folder-to-folder-311282e30f06def19ec5f2f4127afbe7a89bb6a9.ova"
       }
     }
 ]
