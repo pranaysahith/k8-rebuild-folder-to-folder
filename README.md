@@ -15,7 +15,7 @@
 
 ```
   Service_OVA_Path   :   s3://glasswall-sow-ova/vms/k8-rebuild-folder-to-folder/k8-rebuild-folder-to-folder-f782a8ab15b1067ab31b43a7c451a8c759b76f58.ova
-  User_OVA_Path      :   s3://glasswall-sow-ova/vms/k8-rebuild-folder-to-folder/user-vm/k8-rebuild-folder-to-folder-export-i-081f0825e17222660.ova  
+  User_OVA_Path      :   s3://glasswall-sow-ova/vms/k8-rebuild-folder-to-folder/user-vm/Ubuntu18.04.5.ova
 ```
 
 * Run below commands from *your local machine* to import ova file from s3 bucket and create custom AMI
@@ -41,7 +41,7 @@
 ```shell 
   $ ./packer/import-ova.sh <User_OVA_Path>
 
-  Example: $ ./packer/import-ova.sh s3://glasswall-sow-ova/vms/k8-rebuild-folder-to-folder/user-vm/k8-rebuild-folder-to-folder-export-i-081f0825e17222660.ova
+  Example: $ ./packer/import-ova.sh s3://glasswall-sow-ova/vms/k8-rebuild-folder-to-folder/user-vm/Ubuntu18.04.5.ova
 ```
 * Note the value of AMI ID from output
   
@@ -77,6 +77,7 @@
   $ ssh glasswall@<instanceip>
 ```
   - Note: Since instance is created using custom AMI, SSH authentication is allowed only by username and password combination. SSH key supplied in AWS console cannot be used.
+  - Default password is `Gl@$$wall`
   
 * Once login is successfull, change default password using below command and enter new choosen password
 
@@ -148,6 +149,7 @@
 * For `k8-f2f-user` instance, EFS volume can be mounted at any required path by passing mount path as an argument.
 
 ```shell
+  $ git clone https://github.com/k8-proxy/k8-rebuild-folder-to-folder.git
   $ cd k8-rebuild-folder-to-folder
   $ chmod +x packer/mount-efs.sh
   $ ./packer/mount-efs.sh <file system domain> <mount path>
