@@ -25,11 +25,12 @@
 - To [setup access](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-quickstart.html) to AWS account run: `aws configure`. 
     - Enter the data for values as they pop up.
     ```
-    example:
-    AWS Access Key ID [None]: AKIAIOSFODNN7EXAMPLE
-    AWS Secret Access Key [None]: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-    Default region name [None]: us-west-2
-    Default output format [None]: json
+        example:
+  
+            AWS Access Key ID [None]: AKIAIOSFODNN7EXAMPLE
+            AWS Secret Access Key [None]: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+            Default region name [None]: eu-west-1
+            Default output format [None]: json
     ```
     
 - If your have MFA token enabled for authentication to AWS account you should [set up MFA token authenticate through AWS CLI](https://aws.amazon.com/premiumsupport/knowledge-center/authenticate-mfa-cli/)
@@ -179,6 +180,7 @@
     ```
     aws iam put-role-policy --role-name vmimport --policy-name vmimport --policy-document "file://role-policy.json"
     ```
+  
 ### Creating custom AMI
 
 * In this documentation, we will be creating two instances. `k8-f2f-service` in which all processing happens and `k8-f2f-user` which acts as an instance for users to login and use services
@@ -186,43 +188,72 @@
 * Path to ova file for `k8-f2f-user` : `s3://glasswall-sow-ova/ova/Ubuntu18.04.5.ova`
 * To create a custom AMI, OVA file stored in S3 bucket need to be imported. Run below command from *your local machine* to import ova file from s3 bucket and create custom AMI
 
+```
+  Service_OVA_Path   :   s3://glasswall-sow-ova/vms/k8-rebuild-folder-to-folder/k8-rebuild-folder-to-folder-f81add2d6180c586bb9a1d9e9cee023d89d50f3e.ova
+  User_OVA_Path      :   s3://glasswall-sow-ova/vms/k8-rebuild-folder-to-folder/user-vm/k8-rebuild-folder-to-folder-export-i-081f0825e17222660.ova  
+```
+``` 
+  $ git clone https://github.com/k8-proxy/k8-rebuild-folder-to-folder.git
+  $ cd k8-rebuild-folder-to-folder
+```
+
 `k8-f2f-service`:
 
 ```shell 
-  $ git clone https://github.com/k8-proxy/k8-rebuild-folder-to-folder.git 
-  $ cd k8-rebuild-folder-to-folder
-  $ chmod +x packer/import-ova.sh
+  $ chmod +x ./packer/import-ova.sh
   $ ./packer/import-ova.sh <Service_OVA_Path>
-  Example: $ ./packer/import-ova.sh s3://glasswall-sow-ova/vms/k8-rebuild-folder-to-folder/k8-rebuild-folder-to-folder-311282e30f06def19ec5f2f4127afbe7a89bb6a9.ova
- ```
- `k8-f2f-user`:
 
+  Example: ./packer/import-ova.sh s3://glasswall-sow-ova/some.ova
+ ```
+
+* Once import task is completed, above command produces output similar to `Imported AMI ID is: <AMI ID>`. Note the value of AMI ID which can be used in launching instance.
+  
+ `k8-f2f-user`:
+ 
 ```shell 
   $ git clone https://github.com/k8-proxy/k8-rebuild-folder-to-folder.git 
   $ cd k8-rebuild-folder-to-folder
   $ chmod +x packer/import-ova.sh
   $ ./packer/import-ova.sh <User_OVA_Path>
-  Example: $ ./packer/import-ova.sh s3://glasswall-sow-ova/ova/Ubuntu18.04.5.ova
+
+  Example: ./packer/import-ova.sh s3://glasswall-sow-ova/some.ova
 ```
-  - Incase above command gives error similar to `Couldn't find package jq` , install `jq` package which is used for parsing JSON by running below command
-  ```shell 
-  $ sudo apt install jq
-  ```
-* Once import task is completed, above command produces output similar to `Imported AMI ID is: <AMI ID>`. Note the value of AMI ID which cane be used in launching instance
+* Note the value of AMI ID from output
   
 ### Launching Instance
-* Login to AWS Console and change the region to region in which AMI is created
-* From the dashboard, choose `Launch instance`, and on the top right, choose `Search by Systems Manager` Parameter and search by `<AMI ID>` present in output of above step
-* Using AMIs created in above steps, launch both `k8-f2f-service` and `k8-f2f-user` instances.
-* While creating ec2 instance, configure security group of ec2 instance to allow inbound connections to 22,80,443 ports
-* Assign a public ip or keep instance in private subnet and assign a NAT gateway for enabling outbound internet access
-* Incase instance is created in private subnet, ensure SSH access is available either through bastion host or VPN service
+
+* Login to aws console `https://aws.amazon.com/console/`
+
+* Go to EC2 service
+
+* Go to "AMI" under "Images"
+
+* Change the region in which AMI is created (Ireland, eu-wst-1)
+
+* Search the `<AMI ID>` of `k8-f2f-service` present in output of above step.
+
+* Select the `<AMI>` and click `Launch` button.
+
+* Select below configarature for next steps (available on bottom right corner):
+
+      - Choose Instance Type         :     t2.micro ( For load testing we generally use c4.8xlarge but ask to requester which flavour he wants to use )  
+      - Add Storage (disk space)     :     At least 20G
+      - Add Tags                     :     Can be skipped
+      - Configure Security Group     :     22, 80, 443, 2049
+      
+* Click `Review and Launch` and then `Launch`
+
+* Repeat the same steps for `k8-f2f-user` instance.
+
 * After instance is created, Login to created instance by using below command
+
 ```shell
   $ ssh glasswall@<instanceip>
 ```
   - Note: Since instance is created using custom AMI, SSH authentication is allowed only by username and password combination. SSH key supplied in AWS console cannot be used
+  
 * Once login is successfull, change default password using below command and enter new choosen password
+
 ```shell
   $ passwd glasswall
 ```
@@ -230,23 +261,28 @@
 
 ### Creating and mounting EFS Volume
 
-* EFS volume can be created by running below command
+* EFS volume can be created by running below command by replacing creation-token, aws-region and tags with proper values.
+
 ```shell
-$ aws efs create-file-system \
---creation-token creation-token \
---performance-mode generalPurpose \
---throughput-mode bursting \
---region aws-region \
---tags Key=key,Value=value Key=key1,Value=value1 \
+    $ aws efs create-file-system \
+    --creation-token creation-token \
+    --performance-mode generalPurpose \
+    --throughput-mode bursting \
+    --region aws-region \
+    --tags Key=key,Value=value Key=key1,Value=value1 \
 ```
-* Once volume is created, mount target can be created by running below command
+
+* Note down `file-system-id` from output of above command.
+* Once volume is created, mount target can be created by running below command.
+
 ```shell
-$ aws efs create-mount-target \
---file-system-id file-system-id \
---subnet-id  subnet-id \
---security-group ID-of-the-security-group-created-for-mount-target \
---region aws-region \
+    $ aws efs create-mount-target \
+    --file-system-id file-system-id \
+    --subnet-id  subnet-id \
+    --security-group ID-of-the-security-group-created-for-mount-target \
+    --region aws-region \
 ```
+
 * Please note :
   - EFS mount target should be created in same subnet in which two instances are created
   - Security group assigned to EFS volume should allow incoming connections on NFS port from EC2 instance security group
@@ -255,31 +291,40 @@ $ aws efs create-mount-target \
 ### Mounting EFS Volume
 
 * For `k8-f2f-service` instance, run below command which will mount EFS volume at `/data/folder-to-folder`
+
 ```shell
-  $ ./packer/mount-efs.sh /data/folder-to-folder <file system domain>
+  $ chmod +x ./packer/mount-efs.sh 
+  $ ./packer/mount-efs.sh <file system domain> /data/folder-to-folder 
+
+  (<file system domain> = <file system id>.efs.<aws region>.amazonaws.com)
 ```
-* For `k8-f2f-user` instance, EFS volume can be mounted at any required path by passing mount path as an argument 
+
+* For `k8-f2f-user` instance, EFS volume can be mounted at any required path by passing mount path as an argument.
+
 ```shell
   $ git clone https://github.com/k8-proxy/k8-rebuild-folder-to-folder.git 
   $ cd k8-rebuild-folder-to-folder
   $ chmod +x packer/mount-efs.sh
-  $ ./packer/mount-efs.sh <mount path> <file system domain> 
+  $ ./packer/mount-efs.sh <file system domain> <mount path>
 ```
   * In mount path, there are four folders: Input, Output, Error and logs which are used for file handling service
   
 ### Running Service
-* To run folder to folder service, login to `k8-f2f-service` using SSH and Zip the files that needs to be processed. Copy the zip file to `<mount path>/input`. Note that for `k8-f2f-service` instance, mount path will be `/data/folder-to-folder`
+
+* To run folder to folder service, login to `k8-f2f-service` using SSH and Zip the files that needs to be processed. Copy the zip file to `<mount path>/input`
 ```script
-  $ zip files .
-  $ cp <zip name> <mountpath>/input
+  $ sudo apt install zip unzip
+  $ zip -r files.zip <folder_name>/*
+  $ cp files.zip <mount path>/input
 ```
 * Once zip file is copied, File handling service will automatically pick up the folder and will process it 
-* After processing is completed, zip file is automatically moved to `<mount path>/output`. It can be checked by running below command. 
-  ```shell
-  $ ls <mount path>/output
-  ```
-* Incase of any errors during processing, zip file will be moved to `<mount path>/error`
+
+* After processing is completed, data is automatically moved to `<mount path>/output`
+
+* Incase of any errors during processing, data will be moved to `<mount path>/error`
+
 * Logs of processing can be found in `<mount path>/logs`
+
 * Similarly, files can be supplied for processing by logging into `k8-f2f-user` instance using SSH and copying zip files to `<mount path>/input`
 
 
