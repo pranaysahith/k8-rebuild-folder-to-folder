@@ -115,7 +115,15 @@
       "Resource": "*"
     },
     {
-      "Action": "elasticfilesystem:*",
+      "Action": [
+        "elasticfilesystem:CreateFileSystem",
+        "elasticfilesystem:CreateMountTarget",
+        "elasticfilesystem:CreateTags",
+        "elasticfilesystem:DescribeFileSystems",
+        "elasticfilesystem:DescribeMountTargetSecurityGroups",
+        "elasticfilesystem:DescribeMountTargets",
+        "elasticfilesystem:DescribeTags"
+      ],
       "Effect": "Allow",
       "Resource": "*"
     }
@@ -203,7 +211,7 @@
   $ chmod +x ./packer/import-ova.sh
   $ ./packer/import-ova.sh <Service_OVA_Path>
 
-  Example: ./packer/import-ova.sh s3://glasswall-sow-ova/some.ova
+  Example: $ ./packer/import-ova.sh s3://glasswall-sow-ova/vms/k8-rebuild-folder-to-folder/k8-rebuild-folder-to-folder-f81add2d6180c586bb9a1d9e9cee023d89d50f3e.ova
  ```
 
 * Once import task is completed, above command produces output similar to `Imported AMI ID is: <AMI ID>`. Note the value of AMI ID which can be used in launching instance.
@@ -216,7 +224,7 @@
   $ chmod +x packer/import-ova.sh
   $ ./packer/import-ova.sh <User_OVA_Path>
 
-  Example: ./packer/import-ova.sh s3://glasswall-sow-ova/some.ova
+  Example: $ ./packer/import-ova.sh s3://glasswall-sow-ova/vms/k8-rebuild-folder-to-folder/user-vm/k8-rebuild-folder-to-folder-export-i-081f0825e17222660.ova
 ```
 * Note the value of AMI ID from output
   
@@ -239,11 +247,12 @@
       - Choose Instance Type         :     t2.micro ( For load testing we generally use c4.8xlarge but ask to requester which flavour he wants to use )  
       - Add Storage (disk space)     :     At least 20G
       - Add Tags                     :     Can be skipped
-      - Configure Security Group     :     22, 80, 443, 2049
+      - Configure Security Group     :     22, 80, 443
+      - Public ip                    :     Assign a public ip/ NAT gateway incase of private subnet 
       
 * Click `Review and Launch` and then `Launch`
 
-* Repeat the same steps for `k8-f2f-user` instance.
+* Repeat the same steps for `k8-f2f-user` instance
 
 * After instance is created, Login to created instance by using below command
 
@@ -260,7 +269,28 @@
 * After process of instance creation is completed, proceed to creation and mounting of EFS volume which is used to store input and processed output files
 
 ### Creating and mounting EFS Volume
+`Using AWS Console:`
+* To create EFS volume, login to AWS Console and navigate to [https://eu-west-1.console.aws.amazon.com/efs/]
+* Click on `Create file system` and click on `Customize` 
+* In creation wizard Step 1, select follow options and click Next
+```shell
+    - Name: Enter preferred name of EFS file system  Eg: k8-folder-folder
+    - Performance Mode: General Purpose
+    - Throughput Mode: Bursting
+    - Tags - Key:Service, Value: k8-folder-folder
+```
+* In step 2, Select following options for Network access and Click Next
+```shell
+  - VPC               : Select VPC in which `k8-f2f-service` and `k8-f2f-user` instances are created
+  - Mount targets     : Select Subnet in which `k8-f2f-service` and `k8-f2f-user` instances are created 
+  - Security Groups   : Select a security group in which Inbound connections to `NFS service - Port 2049` is allowed from Security group assigned to `k8-f2f-service` and `k8-f2f-user` instances
+  - 
+```
+* Click Next on optional File system policy and review the changes and click on Create
+* Once EFS File system is created, make a note of `File System ID`
 
+
+`Using AWS Cli:`
 * EFS volume can be created by running below command by replacing creation-token, aws-region and tags with proper values.
 
 ```shell
@@ -283,7 +313,7 @@
     --region aws-region \
 ```
 
-* Please note :
+* Note :
   - EFS mount target should be created in same subnet in which two instances are created
   - Security group assigned to EFS volume should allow incoming connections on NFS port from EC2 instance security group
   - Once EFS mount target is created, take a note of `FileSystemId` which is required in next step for mounting
@@ -307,17 +337,42 @@
   $ chmod +x packer/mount-efs.sh
   $ ./packer/mount-efs.sh <file system domain> <mount path>
 ```
-  * In mount path, there are four folders: Input, Output, Error and logs which are used for file handling service
-  
+  * In mount path, there are four folders that will be created: Input, Output, Error and logs. These folders can be accessed from any instance for which file system is mounted  
 ### Running Service
 
-* To run folder to folder service, login to `k8-f2f-service` using SSH and Zip the files that needs to be processed. Copy the zip file to `<mount path>/input`
+* Once all componenets are created, final setup should have following components:
+  ```shell
+      - `k8-f2f-service`- ec2 instnace - Instance in which k8-folder-folder copy service containers are located and which monitors and process files
+      - `k8-f2f-user` - ec2 instance - a demo instance which is used to demonstrate file processing from another instance which can be used by normal users without needing access to `k8-f2f-service` instance
+      - `k8-f2f-efs` - EFS file system - A file system which can be mounted to any number of instances for supplying file to processing service
+  ```
+#### Demo from `k8-f2f-service`:
+
+* To run folder to folder service, login to `k8-f2f-service` using SSH 
+* Zip the files that needs to be processed. Copy the zip file to `/data/folder-to-folder/input`
 ```script
   $ sudo apt install zip unzip
   $ zip -r files.zip <folder_name>/*
-  $ cp files.zip <mount path>/input
+  $ cp files.zip /data/folder-to-folder/input
 ```
-* Once zip file is copied, File handling service will automatically pick up the folder and will process it 
+* Once zip file is copied, File handling service will automatically pick up the zip file and will process it 
+
+* After processing is completed, data is automatically moved to `/data/folder-to-folder/output`
+
+* Incase of any errors during processing, data will be moved to `/data/folder-to-folder/error`
+
+* Logs of processing can be found in `/data/folder-to-folder/logs`
+
+#### Demo from `k8-f2f-user`:
+
+*  To run folder to folder service, login to `k8-f2f-user` using SSH 
+* Zip the files that needs to be processed. Copy the zip file to `<mount path>/input`
+```script
+  $ sudo apt install zip unzip
+  $ zip -r files.zip <folder_name>/*
+  $ cp files.zip /data/folder-to-folder/input
+```
+* Once zip file is copied, File handling service will automatically pick up the zip file and will process it 
 
 * After processing is completed, data is automatically moved to `<mount path>/output`
 
@@ -325,7 +380,10 @@
 
 * Logs of processing can be found in `<mount path>/logs`
 
-* Similarly, files can be supplied for processing by logging into `k8-f2f-user` instance using SSH and copying zip files to `<mount path>/input`
+
+* Having a commong EFS file system accessible to all user instances, makes it convinent to copy input files from any instance and access processed output files from any other user instnace, not necessarily from instance from which files are copied
+* Similarly, EFS file system can be mounted to any number of `k8-f2f-user` instances and files can be copied to `input` folder and processed files can be accessed from `output` folder from any instance
+
 
 
 
