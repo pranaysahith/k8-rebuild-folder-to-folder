@@ -34,7 +34,7 @@
   Example: $ ./packer/import-ova.sh s3://glasswall-sow-ova/vms/k8-rebuild-folder-to-folder/k8-rebuild-folder-to-folder-f782a8ab15b1067ab31b43a7c451a8c759b76f58.ova
  ```
 
-* Once import task is completed, above command produces output similar to `Imported AMI ID is: <AMI ID>`. Note the value of AMI ID which can be used in launching instance.
+* Once import task is completed, above command produces output similar to `Imported AMI ID is: <AMI ID>`. Note the value of AMI ID which is used in launching instance.
   
  `k8-f2f-user`:
  
@@ -53,7 +53,7 @@
 
 * Go to "AMI" under "Images"
 
-* Change the region in which AMI is created (Ireland, eu-wst-1)
+* Change the region in which AMI is created (Ireland, eu-west-1)
 
 * Search the `<AMI ID>` of `k8-f2f-service` present in output of above step.
 
@@ -61,30 +61,34 @@
 
 * Select below configuration for next steps (available on bottom right corner):
 
-      - Choose Instance Type         :     t2.micro ( For load testing we generally use c4.8xlarge but ask to requester which flavour he wants to use )  
-      - Add Storage (disk space)     :     At least 20G
-      - Add Tags                     :     Can be skipped
-      - Configure Security Group     :     22, 80, 443, 2049 (on Glasswall AWS preexisting security group launch-wizard-8 can be used)
-      - Public ip                    :     Assign a public ip/ NAT gateway incase of private subnet 
+      - Choose Instance Type          :     t2.micro 
+      - COnfiguration Instance details:     Select specific VPC and Subnet (you can use default but make sure its the same for both k8-f2f-user and k8-f2f-user instances)
+      - Add Storage (disk space)      :     At least 20G
+      - Add Tags                      :     Can be skipped
+      - Configure Security Group      :     22, 80, 443, 2049 (on Glasswall AWS preexisting security group launch-wizard-8 can be used)
+      - Public ip                     :     Assign a public ip/ NAT gateway in case of private subnet 
+      
+* Example of Security Group (as IP use the ones specific to you)
+
+![image](https://user-images.githubusercontent.com/70108899/105986618-768cc100-609d-11eb-86af-b16ea851b2a9.png)
       
 * Click `Review and Launch` and then `Launch`
 
-* Repeat the same steps for `k8-f2f-user` instance
+* Repeat the same steps for `k8-f2f-user` instance, making sure that instance has same VPC, Subnet and security group assigned as `k8-f2f-service`
 
-* After instance is created, Login to created instance by using below command
+* After process of instance creation is completed, you can login to created instance by using below command
 
 ```shell
   $ ssh glasswall@<instanceip>
 ```
   - Note: Since instance is created using custom AMI, SSH authentication is allowed only by username and password combination. SSH key supplied in AWS console cannot be used.
   - Default password is `Gl@$$wall`
-  
-* Once login is successfull, change default password using below command and enter new choosen password
-
+  - Once you login you can change default password.
 ```shell
   $ passwd glasswall
 ```
-* After process of instance creation is completed, proceed to creation and mounting of EFS volume which is used to store input and processed output files
+
+### Proceed to creation and mounting of EFS volume which is used to store input and processed output files.
 
 ### Creating and mounting EFS Volume
 `Using AWS Console:`
@@ -136,7 +140,8 @@
   
 ### Mounting EFS Volume
 
-* For `k8-f2f-service` instance, run below command which will mount EFS volume at `/data/folder-to-folder`
+* SSH to `k8-f2f-service` instance
+* Run below command which will mount EFS volume at `/data/folder-to-folder`
 
 ```shell
   $ chmod +x ./packer/mount-efs.sh 
@@ -145,7 +150,8 @@
   (<file system domain> = <file system id>.efs.<aws region>.amazonaws.com)
 ```
 
-* For `k8-f2f-user` instance, EFS volume can be mounted at any required path by passing mount path as an argument.
+* SSH to `k8-f2f-user` instance
+* Run below command. Note that EFS volume can be mounted at any required path by passing mount path as an argument.
 
 ```shell
   $ git clone https://github.com/k8-proxy/k8-rebuild-folder-to-folder.git
@@ -153,7 +159,9 @@
   $ chmod +x packer/mount-efs.sh
   $ ./packer/mount-efs.sh <file system domain> <mount path>
 ```
-  * In mount path, there are four folders that will be created: Input, Output, Error and logs. These folders can be accessed from any instance for which file system is mounted  
+  * In mount path, there are four folders that will be created: Input, Output, Error and logs. These folders can be accessed from any instance for which file system is mounted.
+  * Mmount path should be different from mounted path used in `k8-f2f-service` instance (in this example different from /data/folder-to-folder)
+
 ### Running Service
 
 * Once all componenets are created, final setup should have following components:
@@ -164,7 +172,7 @@
   ```
 #### Demo from `k8-f2f-service`:
 
-* To run folder to folder service, login to `k8-f2f-service` using SSH 
+* To run folder to folder service, SSH to `k8-f2f-service`
 * Copy zip files from your local machine to `/data/folder-to-folder/input`
 ```script
   $ sudo apt install zip unzip
@@ -185,7 +193,7 @@
 
 #### Demo from `k8-f2f-user`:
 
-*  To run folder to folder service, login to `k8-f2f-user` using SSH 
+* To run folder to folder service, SSH to `k8-f2f-user`
 * Zip the files that needs to be processed. Copy the zip file to `<mount path>/input`
 ```script
   $ sudo apt install zip unzip
