@@ -174,8 +174,8 @@
 
 * To run folder to folder service, SSH to `k8-f2f-service`
 * Copy zip files from your local machine to `/data/folder-to-folder/input`
+* You can find zip test files examples at [test_files folder](test_files)
 ```script
-  $ sudo apt install zip unzip
   $ scp /local/directory/files.zip glasswall@<k8-f2f-service IP>:/data/folder-to-folder/input
 
 ```
@@ -191,12 +191,18 @@
 
 * To move any of the output files back to your local run `scp glasswall@<k8-f2f-service IP>:/data/folder-to-folder/<ANY FOLDER>/files.zip /local/directory`
 
+* In case of corrupted process try restarting docker-compose
+```
+cd ~/k8-rebuild-folder-to-folder
+sudo docker-compose restart
+```
+
 #### Demo from `k8-f2f-user`:
 
 * To run folder to folder service, SSH to `k8-f2f-user`
 * Zip the files that needs to be processed. Copy the zip file to `<mount path>/input`
+* You can find zip test files examples at [test_files folder](test_files)
 ```script
-  $ sudo apt install zip unzip
   $ scp /local/directory/files.zip glasswall@<k8-f2f-user IP>:<mount path>/input
 ```
 * Once zip file is copied, File handling service will automatically pick up the zip file and will process it 
