@@ -61,7 +61,8 @@ namespace Glasswall.EBS.Rebuild.Handlers
                         destinationPath = System.IO.Path.Combine(rawFilePath, Constants.OutputFolder, System.IO.Path.GetFileName(file));
                         using (FileStream fileStream = new FileStream(destinationPath, FileMode.Create, FileAccess.Write))
                         {
-                            await response.Content.CopyToAsync(fileStream);
+                            if (response.Content != null)
+                                await response.Content.CopyToAsync(fileStream);
                         }
                         File.Delete(file);
                         _logger.LogInformation($"Successfully processed the file {file}");

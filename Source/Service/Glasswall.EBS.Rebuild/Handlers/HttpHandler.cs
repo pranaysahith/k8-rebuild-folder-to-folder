@@ -30,6 +30,7 @@ namespace Glasswall.EBS.Rebuild.Handlers
             {
                 _client = new HttpClient();
             }
+            _client.Timeout = TimeSpan.FromMilliseconds(System.Threading.Timeout.Infinite);
         }
 
         public async Task<IApiResponse> PostAsync(string url, HttpContent data)
