@@ -49,7 +49,7 @@ namespace Glasswall.EBS.Rebuild.Handlers
             catch (Exception ex)
             {
                 apiResponse.Message = ex.Message;
-                _logger.LogError(ex.Message);
+                _logger.LogError($"Exception occured while processing folder errorMessage: {ex.Message} and errorStackTrace: {ex.StackTrace}");
             }
             return apiResponse;
         }
