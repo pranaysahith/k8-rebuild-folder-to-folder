@@ -45,7 +45,8 @@ namespace Glasswall.EBS.Rebuild.Handlers
 
         public async Task ProcessFolder()
         {
-            string tempFolderPath = System.IO.Path.Combine(Environment.GetEnvironmentVariable(Constants.EnvironmentVariables.ForldersPath), Guid.NewGuid().ToString());
+            string processingFolderPath = System.IO.Path.Combine(Environment.GetEnvironmentVariable(Constants.EnvironmentVariables.ForldersPath), Constants.ProcessingFolder);
+            string tempFolderPath = System.IO.Path.Combine(processingFolderPath, Guid.NewGuid().ToString());
             try
             {
                 MoveInputFilesToTempLocation(tempFolderPath);
@@ -57,6 +58,7 @@ namespace Glasswall.EBS.Rebuild.Handlers
                     string url = $"{Environment.GetEnvironmentVariable(Constants.EnvironmentVariables.RebuildApiBaseUrl)}{Constants.ZipFileApiPath}";
                     IApiResponse response = await _httpHandler.PostAsync(url, multiFormData);
                     string rawFilePath = file.Substring(0, file.Substring(0, file.LastIndexOf("/")).LastIndexOf("/"));
+                    rawFilePath = rawFilePath.Substring(0, rawFilePath.LastIndexOf("/"));
                     string destinationPath = string.Empty;
                     if (response.Success)
                     {
@@ -67,14 +69,14 @@ namespace Glasswall.EBS.Rebuild.Handlers
                             if (response.Content != null)
                                 await response.Content.CopyToAsync(fileStream);
                         }
-                        _logger.LogInformation($"Successfully processed the file {file}");
+                        _logger.LogInformation($"Successfully processed the file {System.IO.Path.GetFileName(file)}");
                     }
                     else
                     {
                         destinationPath = System.IO.Path.Combine(rawFilePath, Constants.ErrorFolder, System.IO.Path.GetFileName(file));
                         destinationPath = NextAvailableFilename(destinationPath);
                         File.Move(file, destinationPath);
-                        _logger.LogInformation($"Error while processing the file {file} and error is {response.Message}");
+                        _logger.LogInformation($"Error while processing the file {System.IO.Path.GetFileName(file)} and error is {response.Message}");
                     }
                 }
             }
