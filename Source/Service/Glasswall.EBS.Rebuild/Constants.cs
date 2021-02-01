@@ -6,6 +6,7 @@
         public const string OutputFolder = "output";
         public const string ErrorFolder = "error";
         public const string LogFolder = "log";
+        public const string ProcessingFolder = "gw-processing";
         public const string ZipSearchPattern = "*.zip";
         public const string FileKey = "file";
         public const string ZipFileApiPath = "/api/rebuild/zipfile";
