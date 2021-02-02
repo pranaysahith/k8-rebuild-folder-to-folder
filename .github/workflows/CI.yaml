@@ -122,7 +122,7 @@ jobs:
         with:
           host: ${{ steps.deploy.outputs.instance_ip }}
           username: glasswall
-          password: '${{ secrets.SSH_PASSWORD }}'
+          password: '${{ secrets.F2F_PASSWORD }}'
           script: |
             MOUNT_PATH=/data/folder-to-folder
             sudo mkdir -p $MOUNT_PATH
