@@ -11,7 +11,7 @@
     ```
     Or
     ```
-    export AWS_PROFILE_NAME=glasswall
+    export AWS_PROFILE_NAME=<some profile name>
     ```
 
 ### Fill config.env file with details:
